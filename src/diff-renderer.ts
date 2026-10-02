@@ -85,8 +85,8 @@ interface RgbColor {
 }
 
 interface DiffPalette {
-	addRowBgAnsi: string;
-	removeRowBgAnsi: string;
+	addRowBgAnsi: string | undefined;
+	removeRowBgAnsi: string | undefined;
 	addEmphasisBgAnsi: string;
 	removeEmphasisBgAnsi: string;
 }
@@ -113,6 +113,9 @@ const ADD_ROW_BACKGROUND_MIX_RATIO = 0.12;
 const REMOVE_ROW_BACKGROUND_MIX_RATIO = 0.12;
 const ADD_INLINE_EMPHASIS_MIX_RATIO = 0.26;
 const REMOVE_INLINE_EMPHASIS_MIX_RATIO = 0.26;
+// Transparent rows leave word emphasis as the only fill on a changed line, so it
+// needs more color than when it sits on top of a tinted row.
+const TRANSPARENT_INLINE_EMPHASIS_MIX_RATIO = 0.5;
 const ADDITION_TINT_TARGET: RgbColor = { r: 84, g: 190, b: 118 };
 const DELETION_TINT_TARGET: RgbColor = { r: 232, g: 95, b: 122 };
 const ANSI_BG_RESET = "\x1b[49m";
@@ -182,8 +185,35 @@ function stripBackgroundResetParams(params: number[]): number[] {
 	return filtered;
 }
 
+// Resets are stripped so they can't punch holes in a tinted row or panel fill.
+// Transparent rows have no fill to protect, and there the reset is the only
+// thing that ends an inline emphasis span; stripping it lets the emphasis
+// color bleed across cell padding and the split divider.
+let preserveBackgroundResetsDepth = 0;
+
+function withBackgroundResetsPreserved<T>(render: () => T): T {
+	preserveBackgroundResetsDepth++;
+	try {
+		return render();
+	} finally {
+		preserveBackgroundResetsDepth--;
+	}
+}
+
+function preserveResetsForTransparentRows(
+	config: Pick<ToolDisplayConfig, "diffRowBackground">,
+	component: Component,
+): Component {
+	if (config.diffRowBackground !== "transparent") {
+		return component;
+	}
+	const render = component.render.bind(component);
+	component.render = (width: number): string[] => withBackgroundResetsPreserved(() => render(width));
+	return component;
+}
+
 function stabilizeBackgroundResets(text: string): string {
-	if (!text) {
+	if (!text || preserveBackgroundResetsDepth > 0) {
 		return text;
 	}
 	return filterSgrSequences(text, stripBackgroundResetParams);
@@ -1135,7 +1165,7 @@ function resolveContainerBackgroundAnsi(theme: DiffTheme): string | undefined {
 		?? readThemeAnsi(theme, "bg", "userMessageBg");
 }
 
-function resolveDiffPalette(theme: DiffTheme): DiffPalette {
+function resolveDiffPalette(theme: DiffTheme, config?: ToolDisplayConfig): DiffPalette {
 	const baseBg = parseAnsiColorCode(readThemeAnsi(theme, "bg", "toolSuccessBg"))
 		?? parseAnsiColorCode(readThemeAnsi(theme, "bg", "toolPendingBg"))
 		?? parseAnsiColorCode(readThemeAnsi(theme, "bg", "userMessageBg"))
@@ -1145,14 +1175,23 @@ function resolveDiffPalette(theme: DiffTheme): DiffPalette {
 	const addTint = mixRgb(addFg, ADDITION_TINT_TARGET, 0.35);
 	const removeTint = mixRgb(removeFg, DELETION_TINT_TARGET, 0.65);
 
+	// In transparent mode there is no container fill to mix emphasis against,
+	// so mix word-level emphasis against black to keep it visible on OLED panels.
+	const transparentRows = config?.diffRowBackground === "transparent";
+	const emphasisBaseBg = transparentRows ? { r: 0, g: 0, b: 0 } : baseBg;
+	const addEmphasisRatio = transparentRows ? TRANSPARENT_INLINE_EMPHASIS_MIX_RATIO : ADD_INLINE_EMPHASIS_MIX_RATIO;
+	const removeEmphasisRatio = transparentRows ? TRANSPARENT_INLINE_EMPHASIS_MIX_RATIO : REMOVE_INLINE_EMPHASIS_MIX_RATIO;
+
 	const addRowBg = mixRgb(baseBg, addTint, ADD_ROW_BACKGROUND_MIX_RATIO);
 	const removeRowBg = mixRgb(baseBg, removeTint, REMOVE_ROW_BACKGROUND_MIX_RATIO);
-	const addEmphasisBg = mixRgb(baseBg, addTint, ADD_INLINE_EMPHASIS_MIX_RATIO);
-	const removeEmphasisBg = mixRgb(baseBg, removeTint, REMOVE_INLINE_EMPHASIS_MIX_RATIO);
+	// On black, the shift toward the generic tint targets reads as washed out;
+	// use the theme's own diff colors so neon palettes stay saturated.
+	const addEmphasisBg = mixRgb(emphasisBaseBg, transparentRows ? addFg : addTint, addEmphasisRatio);
+	const removeEmphasisBg = mixRgb(emphasisBaseBg, transparentRows ? removeFg : removeTint, removeEmphasisRatio);
 
 	return {
-		addRowBgAnsi: rgbToBgAnsi(addRowBg),
-		removeRowBgAnsi: rgbToBgAnsi(removeRowBg),
+		addRowBgAnsi: config?.diffRowBackground === "transparent" ? undefined : rgbToBgAnsi(addRowBg),
+		removeRowBgAnsi: config?.diffRowBackground === "transparent" ? undefined : rgbToBgAnsi(removeRowBg),
 		addEmphasisBgAnsi: rgbToBgAnsi(addEmphasisBg),
 		removeEmphasisBgAnsi: rgbToBgAnsi(removeEmphasisBg),
 	};
@@ -2095,8 +2134,10 @@ export function renderEditDiffResult(
 	const showHashlineAnchors = options.expanded === true
 		&& parsed.entries.some((entry) => entry.kind === "line" && !!entry.hashlineAnchorContent);
 	const lineNumberWidth = getLineNumberWidth(parsed.entries, showHashlineAnchors);
-	const palette = resolveDiffPalette(theme);
-	const containerBgAnsi = resolveContainerBackgroundAnsi(theme);
+	const palette = resolveDiffPalette(theme, config);
+	const containerBgAnsi = config.diffRowBackground === "transparent"
+		? undefined
+		: resolveContainerBackgroundAnsi(theme);
 	const language = resolveLanguageFromPath(options.filePath);
 	const highlightLine = createCodeLineHighlighter(language);
 	const wordWrap = config.diffWordWrap;
@@ -2104,7 +2145,7 @@ export function renderEditDiffResult(
 
 	const cache = createDiffRenderCache();
 
-	return {
+	return preserveResetsForTransparentRows(config, {
 		render(width: number): string[] {
 			const safeWidth = normalizeDiffRenderWidth(width);
 			const mode = resolveDiffPresentationMode(config, safeWidth, canRenderSplitLayout(safeWidth));
@@ -2153,7 +2194,7 @@ export function renderEditDiffResult(
 			return cache.set(safeWidth, options.expanded, mode, clampedLines);
 		},
 		invalidate: cache.invalidate,
-	};
+	});
 }
 
 function renderWriteHeader(
@@ -2418,8 +2459,10 @@ export function renderWriteDiffResult(
 	const overwriteGuard = hasComparablePrevious
 		? resolveWriteOverwriteGuard(previousLines, lines)
 		: undefined;
-	const palette = resolveDiffPalette(theme);
-	const containerBgAnsi = resolveContainerBackgroundAnsi(theme);
+	const palette = resolveDiffPalette(theme, config);
+	const containerBgAnsi = config.diffRowBackground === "transparent"
+		? undefined
+		: resolveContainerBackgroundAnsi(theme);
 	const language = resolveLanguageFromPath(filePath);
 	const highlightLine = createCodeLineHighlighter(language);
 	const wordWrap = config.diffWordWrap;
@@ -2439,7 +2482,7 @@ export function renderWriteDiffResult(
 		return detailedData;
 	}
 
-	return {
+	return preserveResetsForTransparentRows(config, {
 		render(width: number): string[] {
 			const safeWidth = normalizeDiffRenderWidth(width);
 			const resolvedMode = resolveDiffPresentationMode(config, safeWidth, canRenderSplitLayout(safeWidth));
@@ -2513,5 +2556,5 @@ export function renderWriteDiffResult(
 			return cache.set(safeWidth, options.expanded, mode, finalLines);
 		},
 		invalidate: cache.invalidate,
-	};
+	});
 }

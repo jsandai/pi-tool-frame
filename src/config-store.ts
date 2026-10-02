@@ -7,6 +7,7 @@ import {
 	CUSTOM_TOOL_OUTPUT_MODES,
 	CUSTOM_TOOL_OVERRIDE_KINDS,
 	DEFAULT_TOOL_DISPLAY_CONFIG,
+	DIFF_ROW_BACKGROUNDS,
 	TOOL_PANEL_STYLES,
 	type ConfigLoadResult,
 	type ConfigSaveResult,
@@ -87,6 +88,16 @@ function toToolPanelStyle(value: unknown): ToolDisplayConfig["toolPanelStyle"] {
 	return TOOL_PANEL_STYLES.includes(value as ToolDisplayConfig["toolPanelStyle"])
 		? (value as ToolDisplayConfig["toolPanelStyle"])
 		: DEFAULT_TOOL_DISPLAY_CONFIG.toolPanelStyle;
+}
+
+function toDiffRowBackground(value: unknown): ToolDisplayConfig["diffRowBackground"] {
+	return DIFF_ROW_BACKGROUNDS.includes(value as ToolDisplayConfig["diffRowBackground"])
+		? (value as ToolDisplayConfig["diffRowBackground"])
+		: DEFAULT_TOOL_DISPLAY_CONFIG.diffRowBackground;
+}
+
+function toOptionalString(value: unknown): string | undefined {
+	return typeof value === "string" && value.trim() !== "" ? value : undefined;
 }
 
 export function cloneCustomToolOverrides(
@@ -223,6 +234,8 @@ export function normalizeToolDisplayConfig(raw: unknown): ToolDisplayConfig {
 			DEFAULT_TOOL_DISPLAY_CONFIG.enableNativeUserMessageBox,
 		),
 		toolPanelStyle: toToolPanelStyle(source.toolPanelStyle),
+		toolPanelBorderColor: toOptionalString(source.toolPanelBorderColor),
+		diffPanelBorderColor: toOptionalString(source.diffPanelBorderColor),
 		readOutputMode: toReadOutputMode(source.readOutputMode),
 		searchOutputMode: toSearchOutputMode(source.searchOutputMode),
 		mcpOutputMode: toMcpOutputMode(source.mcpOutputMode),
@@ -237,6 +250,7 @@ export function normalizeToolDisplayConfig(raw: unknown): ToolDisplayConfig {
 		bashCollapsedLines: clampNumber(source.bashCollapsedLines, 0, 80, DEFAULT_TOOL_DISPLAY_CONFIG.bashCollapsedLines),
 		diffViewMode: toDiffViewMode(source.diffViewMode),
 		diffIndicatorMode: toDiffIndicatorMode(source.diffIndicatorMode),
+		diffRowBackground: toDiffRowBackground(source.diffRowBackground),
 		diffSplitMinWidth: clampNumber(source.diffSplitMinWidth, 70, 240, DEFAULT_TOOL_DISPLAY_CONFIG.diffSplitMinWidth),
 		diffCollapsedLines: clampNumber(source.diffCollapsedLines, 4, 240, DEFAULT_TOOL_DISPLAY_CONFIG.diffCollapsedLines),
 		diffWordWrap: toBoolean(source.diffWordWrap, DEFAULT_TOOL_DISPLAY_CONFIG.diffWordWrap),

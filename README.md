@@ -146,6 +146,8 @@ A starter template is included at `config/config.example.json`.
 | `customToolOverrides` | object | `{}` | Explicit opt-in rendering rules for non-built-in extension tools |
 | `enableNativeUserMessageBox` | boolean | `true` | Enable bordered user prompt rendering |
 | `toolPanelStyle` | string | `"filled"` | `filled` (native tinted background) or `outline` (state-colored border, no fill) |
+| `toolPanelBorderColor` | string | unset | Theme color token for every outline border, overriding the state colors |
+| `diffPanelBorderColor` | string | unset | Theme color token for the outline border of finished `edit`/`write` panels |
 | `readOutputMode` | string | `"hidden"` | `hidden`, `summary`, or `preview` |
 | `searchOutputMode` | string | `"hidden"` | `hidden`, `count`, or `preview` |
 | `mcpOutputMode` | string | `"hidden"` | `hidden`, `summary`, or `preview` |
@@ -155,6 +157,7 @@ A starter template is included at `config/config.example.json`.
 | `bashCollapsedLines` | number | `10` | Lines shown for collapsed bash output (opencode mode) |
 | `diffViewMode` | string | `"auto"` | `auto`, `split`, or `unified` |
 | `diffIndicatorMode` | string | `"bars"` | `bars` (vertical indicators), `classic` (+/- markers), or `none` |
+| `diffRowBackground` | string | `"tinted"` | `tinted` (row backgrounds) or `transparent` (no row fill; stronger word emphasis from the theme diff colors) |
 | `diffSplitMinWidth` | number | `120` | Minimum width before auto mode prefers split diffs |
 | `diffCollapsedLines` | number | `24` | Diff lines shown before collapsing |
 | `diffWordWrap` | boolean | `true` | Wrap long diff lines when needed |

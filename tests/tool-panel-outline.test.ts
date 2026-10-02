@@ -5,6 +5,7 @@ import { normalizeToolDisplayConfig } from "../src/config-store.ts";
 import {
   frameToolPanelLines,
   patchToolExecutionPrototype,
+  resolveOutlineDefinition,
   resolveToolPanelState,
   restoreToolExecutionPrototype,
   type PatchableToolExecutionPrototype,
@@ -145,4 +146,76 @@ test("toolPanelStyle normalizes unknown values to filled", () => {
   assert.equal(normalizeToolDisplayConfig({}).toolPanelStyle, "filled");
   assert.equal(normalizeToolDisplayConfig({ toolPanelStyle: "outline" }).toolPanelStyle, "outline");
   assert.equal(normalizeToolDisplayConfig({ toolPanelStyle: "neon" }).toolPanelStyle, "filled");
+});
+
+const fakeApi = {
+  decorateTool: (tool: Record<string, unknown>) => ({ ...tool, renderShell: "default", renderResult: "decorated" }),
+};
+
+test("resolveOutlineDefinition reroutes a stock self-framed edit", () => {
+  const stockEdit = { name: "edit", renderShell: "self", renderResult: "stock" };
+  const resolved = resolveOutlineDefinition(stockEdit, fakeApi);
+  assert.equal(resolved?.renderShell, "default");
+  assert.equal(resolved?.renderResult, "decorated");
+  assert.equal(resolveOutlineDefinition(stockEdit, fakeApi), resolved, "decoration is cached");
+});
+
+test("resolveOutlineDefinition leaves other definitions alone", () => {
+  const bash = { name: "bash", renderShell: "self" };
+  const decoratedEdit = { name: "edit", renderShell: "default" };
+  assert.equal(resolveOutlineDefinition(bash, fakeApi), bash);
+  assert.equal(resolveOutlineDefinition(decoratedEdit, fakeApi), decoratedEdit);
+  const stockEdit = { name: "edit", renderShell: "self" };
+  assert.equal(resolveOutlineDefinition(stockEdit, undefined), stockEdit);
+});
+
+test("patched getRenderShell frames a stock edit only while outline is enabled", () => {
+  const key = Symbol.for("pi-tool-display.api.v1");
+  const globals = globalThis as Record<symbol, unknown>;
+  const previousApi = globals[key];
+  globals[key] = fakeApi;
+  try {
+    const prototype = createPrototype();
+    (prototype as unknown as Record<string, unknown>).getRenderShell = function (this: { toolDefinition?: { renderShell?: string } }) {
+      return this.toolDefinition?.renderShell ?? "default";
+    };
+    let enabled = true;
+    patchToolExecutionPrototype(prototype, () => tagTheme, () => enabled);
+    const component = createComponent(prototype) as unknown as { toolDefinition: unknown; getRenderShell(): string };
+    delete (component as Record<string, unknown>).getRenderShell;
+    component.toolDefinition = { name: "edit", renderShell: "self" };
+
+    assert.equal(component.getRenderShell(), "default");
+    enabled = false;
+    assert.equal(component.getRenderShell(), "self");
+
+    restoreToolExecutionPrototype(prototype);
+    enabled = true;
+    assert.equal(component.getRenderShell(), "self");
+  } finally {
+    globals[key] = previousApi;
+  }
+});
+
+test("patched render passes tool name and state to the border slot resolver", () => {
+  const prototype = createPrototype();
+  const seen: Array<[string | undefined, string]> = [];
+  patchToolExecutionPrototype(prototype, () => tagTheme, () => true, (toolName, state) => {
+    seen.push([toolName, state]);
+    return toolName === "edit" && state === "success" ? "diffBorder" : undefined;
+  });
+
+  const edit = createComponent(prototype) as ReturnType<typeof createComponent> & { toolName: string };
+  edit.toolName = "edit";
+  assert.ok(edit.render(20)[1]?.startsWith("<diffBorder>"));
+
+  const bash = createComponent(prototype) as ReturnType<typeof createComponent> & { toolName: string };
+  bash.toolName = "bash";
+  assert.ok(bash.render(20)[1]?.startsWith("<success>"));
+
+  const failedEdit = createComponent(prototype, { result: { isError: true } }) as ReturnType<typeof createComponent> & { toolName: string };
+  failedEdit.toolName = "edit";
+  assert.ok(failedEdit.render(20)[1]?.startsWith("<error>"));
+
+  assert.deepEqual(seen, [["edit", "success"], ["bash", "success"], ["edit", "error"]]);
 });

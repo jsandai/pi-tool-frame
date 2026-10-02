@@ -27,15 +27,70 @@ interface ToolExecutionInternals {
   hideComponent?: boolean;
   isPartial?: boolean;
   result?: { isError?: boolean };
+  toolName?: string;
+  toolDefinition?: ToolDefinitionLike;
   hasRendererDefinition?(): boolean;
   getRenderShell?(): string;
 }
 
+interface ToolDefinitionLike {
+  name?: string;
+  renderShell?: string;
+  renderCall?: unknown;
+  renderResult?: unknown;
+}
+
+interface ToolDisplayApiLike {
+  decorateTool(tool: ToolDefinitionLike, adapter?: Record<string, unknown>): ToolDefinitionLike;
+}
+
+type DefinitionGetter = (this: ToolExecutionInternals) => unknown;
+
 export interface PatchableToolExecutionPrototype {
   render: RenderFn;
   updateDisplay: UpdateDisplayFn;
+  getRenderShell?: DefinitionGetter;
+  getCallRenderer?: DefinitionGetter;
+  getResultRenderer?: DefinitionGetter;
   __piToolPanelOriginalRender?: RenderFn;
   __piToolPanelOriginalUpdateDisplay?: UpdateDisplayFn;
+  __piToolPanelOriginalGetters?: Partial<Record<DefinitionGetterName, DefinitionGetter>>;
+}
+
+type DefinitionGetterName = "getRenderShell" | "getCallRenderer" | "getResultRenderer";
+
+const TOOL_DISPLAY_API_KEY = Symbol.for("pi-tool-display.api.v1");
+const DIFF_TOOL_NAMES = new Set(["edit", "write"]);
+const decoratedDefinitions = new WeakMap<ToolDefinitionLike, ToolDefinitionLike>();
+
+/**
+ * Another extension can re-register pi's stock edit tool after this package
+ * registered its own (the Antigravity bridge's approval shadows do), and the
+ * stock edit draws a self-framed filled panel. In outline mode, render such a
+ * definition through this package's edit renderers so it gets the shared frame.
+ */
+export function resolveOutlineDefinition(
+  definition: ToolDefinitionLike | undefined,
+  api: ToolDisplayApiLike | undefined,
+): ToolDefinitionLike | undefined {
+  if (!definition || !api || definition.name !== "edit" || definition.renderShell !== "self") {
+    return definition;
+  }
+  let decorated = decoratedDefinitions.get(definition);
+  if (!decorated) {
+    try {
+      decorated = api.decorateTool({ ...definition }, { kind: "edit", overrideExistingRenderers: true });
+    } catch {
+      return definition;
+    }
+    decoratedDefinitions.set(definition, decorated);
+  }
+  return decorated;
+}
+
+function getToolDisplayApi(): ToolDisplayApiLike | undefined {
+  const api = (globalThis as Record<symbol, unknown>)[TOOL_DISPLAY_API_KEY] as ToolDisplayApiLike | undefined;
+  return typeof api?.decorateTool === "function" ? api : undefined;
 }
 
 const STATE_COLORS: Record<ToolPanelState, string> = {
@@ -108,6 +163,7 @@ export function patchToolExecutionPrototype(
   prototype: PatchableToolExecutionPrototype,
   getTheme: () => ToolPanelOutlineTheme | undefined,
   isEnabled: () => boolean,
+  getBorderSlot?: (toolName: string | undefined, state: ToolPanelState) => string | undefined,
 ): void {
   if (prototype.__piToolPanelOriginalRender) {
     return;
@@ -120,6 +176,29 @@ export function patchToolExecutionPrototype(
   const originalUpdateDisplay = prototype.updateDisplay;
   prototype.__piToolPanelOriginalRender = originalRender;
   prototype.__piToolPanelOriginalUpdateDisplay = originalUpdateDisplay;
+
+  // Read at construction too, so a stock edit gets the framed default shell
+  // from the start instead of the self-render container.
+  const originalGetters: Partial<Record<DefinitionGetterName, DefinitionGetter>> = {};
+  const effectiveDefinition = (component: ToolExecutionInternals): ToolDefinitionLike | undefined =>
+    isEnabled() ? resolveOutlineDefinition(component.toolDefinition, getToolDisplayApi()) : component.toolDefinition;
+  const readers: Record<DefinitionGetterName, (definition: ToolDefinitionLike | undefined) => unknown> = {
+    getRenderShell: (definition) => definition?.renderShell ?? "default",
+    getCallRenderer: (definition) => definition?.renderCall,
+    getResultRenderer: (definition) => definition?.renderResult,
+  };
+  for (const name of Object.keys(readers) as DefinitionGetterName[]) {
+    const original = prototype[name];
+    if (typeof original !== "function") {
+      continue;
+    }
+    originalGetters[name] = original;
+    prototype[name] = function patchedDefinitionGetter(this: ToolExecutionInternals): unknown {
+      const definition = effectiveDefinition(this);
+      return definition === this.toolDefinition ? original.call(this) : readers[name](definition);
+    };
+  }
+  prototype.__piToolPanelOriginalGetters = originalGetters;
 
   prototype.updateDisplay = function patchedUpdateDisplay(this: ToolExecutionInternals): void {
     originalUpdateDisplay.call(this);
@@ -143,8 +222,22 @@ export function patchToolExecutionPrototype(
 
     // The first row is the component's leading Spacer; keep it outside the frame.
     const [spacer, ...body] = lines;
-    const color = STATE_COLORS[resolveToolPanelState(this)];
+    const state = resolveToolPanelState(this);
+    const color = STATE_COLORS[state];
+    const borderSlot = getBorderSlot?.(this.toolName, state);
     const colorBorder = (text: string): string => {
+      // A configured border slot (e.g. "toolPanelBorder") wins over the
+      // state color; unknown slots fall back to the state color.
+      if (borderSlot) {
+        try {
+          const themed = theme.fg(borderSlot, text);
+          if (themed !== text) {
+            return themed;
+          }
+        } catch {
+          // slot unknown to this theme
+        }
+      }
       try {
         return theme.fg(color, text);
       } catch {
@@ -162,8 +255,12 @@ export function restoreToolExecutionPrototype(prototype: PatchableToolExecutionP
   if (prototype.__piToolPanelOriginalUpdateDisplay) {
     prototype.updateDisplay = prototype.__piToolPanelOriginalUpdateDisplay;
   }
+  for (const [name, original] of Object.entries(prototype.__piToolPanelOriginalGetters ?? {})) {
+    prototype[name as DefinitionGetterName] = original;
+  }
   delete prototype.__piToolPanelOriginalRender;
   delete prototype.__piToolPanelOriginalUpdateDisplay;
+  delete prototype.__piToolPanelOriginalGetters;
 }
 
 const registeredApis = new WeakSet<ExtensionAPI>();
@@ -184,8 +281,17 @@ export default function registerToolPanelOutline(
   let activeTheme: ToolPanelOutlineTheme | undefined;
   const getTheme = (): ToolPanelOutlineTheme | undefined => activeTheme;
   const isEnabled = (): boolean => getConfig().toolPanelStyle === "outline";
+  const getBorderSlot = (toolName: string | undefined, state: ToolPanelState): string | undefined => {
+    const config = getConfig();
+    // Diff panels only take their own color once finished, so a failed edit
+    // still reads as an error and a running one as pending.
+    if (state === "success" && toolName !== undefined && DIFF_TOOL_NAMES.has(toolName) && config.diffPanelBorderColor) {
+      return config.diffPanelBorderColor;
+    }
+    return config.toolPanelBorderColor;
+  };
 
-  patchToolExecutionPrototype(getToolExecutionPrototype(), getTheme, isEnabled);
+  patchToolExecutionPrototype(getToolExecutionPrototype(), getTheme, isEnabled, getBorderSlot);
 
   onReloadShutdown(pi, () => {
     restoreToolExecutionPrototype(getToolExecutionPrototype());

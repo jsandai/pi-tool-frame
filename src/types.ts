@@ -6,6 +6,7 @@ export const CUSTOM_TOOL_OUTPUT_MODES = ["hidden", "summary", "preview"] as cons
 export const BASH_OUTPUT_MODES = ["opencode", "summary", "preview"] as const;
 export const DIFF_VIEW_MODES = ["auto", "split", "unified"] as const;
 export const DIFF_INDICATOR_MODES = ["bars", "classic", "none"] as const;
+export const DIFF_ROW_BACKGROUNDS = ["tinted", "transparent"] as const;
 export const TOOL_PANEL_STYLES = ["filled", "outline"] as const;
 
 export type ReadOutputMode = (typeof READ_OUTPUT_MODES)[number];
@@ -16,6 +17,7 @@ export type CustomToolOutputMode = (typeof CUSTOM_TOOL_OUTPUT_MODES)[number];
 export type BashOutputMode = (typeof BASH_OUTPUT_MODES)[number];
 export type DiffViewMode = (typeof DIFF_VIEW_MODES)[number];
 export type DiffIndicatorMode = (typeof DIFF_INDICATOR_MODES)[number];
+export type DiffRowBackground = (typeof DIFF_ROW_BACKGROUNDS)[number];
 export type ToolPanelStyle = (typeof TOOL_PANEL_STYLES)[number];
 
 export const BUILT_IN_TOOL_OVERRIDE_NAMES = [
@@ -52,6 +54,8 @@ export interface ToolDisplayConfig {
 	customToolOverrides: Record<string, CustomToolOverrideConfig>;
 	enableNativeUserMessageBox: boolean;
 	toolPanelStyle: ToolPanelStyle;
+	toolPanelBorderColor: string | undefined;
+	diffPanelBorderColor: string | undefined;
 	readOutputMode: ReadOutputMode;
 	searchOutputMode: SearchOutputMode;
 	mcpOutputMode: McpOutputMode;
@@ -61,6 +65,7 @@ export interface ToolDisplayConfig {
 	bashCollapsedLines: number;
 	diffViewMode: DiffViewMode;
 	diffIndicatorMode: DiffIndicatorMode;
+	diffRowBackground: DiffRowBackground;
 	diffSplitMinWidth: number;
 	diffCollapsedLines: number;
 	diffWordWrap: boolean;
@@ -82,6 +87,8 @@ export const DEFAULT_TOOL_DISPLAY_CONFIG: ToolDisplayConfig = {
 	customToolOverrides: {},
 	enableNativeUserMessageBox: true,
 	toolPanelStyle: "filled",
+	toolPanelBorderColor: undefined,
+	diffPanelBorderColor: undefined,
 	readOutputMode: "hidden",
 	searchOutputMode: "hidden",
 	mcpOutputMode: "hidden",
@@ -91,6 +98,7 @@ export const DEFAULT_TOOL_DISPLAY_CONFIG: ToolDisplayConfig = {
 	bashCollapsedLines: 10,
 	diffViewMode: "auto",
 	diffIndicatorMode: "bars",
+	diffRowBackground: "tinted",
 	diffSplitMinWidth: 120,
 	diffCollapsedLines: 24,
 	diffWordWrap: true,
