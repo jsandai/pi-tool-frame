@@ -44,6 +44,7 @@ function summarizeConfig(config: ToolDisplayConfig, capabilities: ToolDisplayCap
 		`preset=${preset}`,
 		`owners={${toolOwnershipSummary(config)}}`,
 		`userBox=${toOnOff(config.enableNativeUserMessageBox)}`,
+		`toolPanel=${config.toolPanelStyle}`,
 		`read=${config.readOutputMode}`,
 		`search=${config.searchOutputMode}`,
 		`preview=${config.previewLines}`,
@@ -309,6 +310,26 @@ function buildInspectorSettings(
 			inspectorPath: configPath,
 			searchTerms: ["user", "message", "box", "prompt", "native"],
 		},
+		{
+			id: "toolPanelStyle",
+			label: "Tool panel style",
+			currentValue: config.toolPanelStyle,
+			values: ["filled", "outline"],
+			inspectorTitle: "Tool Panel Style",
+			inspectorSummary: [
+				"Chooses how tool call panels are framed in the Pi transcript.",
+				"Outline drops the filled background and draws a rounded border colored by state: accent while running, success when done, error on failure.",
+			],
+			inspectorOptions: [
+				"filled — Pi's native tinted panel background",
+				"outline — transparent panel with a state-colored border",
+			],
+			inspectorAdvanced: buildAdvancedNotes(config, capabilities, [
+				"Panels with inline images and tools that draw their own framing keep the native look.",
+			]),
+			inspectorPath: configPath,
+			searchTerms: ["tool", "panel", "outline", "border", "background", "filled"],
+		},
 	);
 
 	return items;
@@ -328,6 +349,11 @@ function applySetting(config: ToolDisplayConfig, id: string, value: string): Too
 			return {
 				...config,
 				enableNativeUserMessageBox: value === "on",
+			};
+		case "toolPanelStyle":
+			return {
+				...config,
+				toolPanelStyle: value as ToolDisplayConfig["toolPanelStyle"],
 			};
 		case "readOutputMode":
 			return {

@@ -7,6 +7,7 @@ import {
 	CUSTOM_TOOL_OUTPUT_MODES,
 	CUSTOM_TOOL_OVERRIDE_KINDS,
 	DEFAULT_TOOL_DISPLAY_CONFIG,
+	TOOL_PANEL_STYLES,
 	type ConfigLoadResult,
 	type ConfigSaveResult,
 	type CustomToolOverrideConfig,
@@ -80,6 +81,12 @@ function toDiffIndicatorMode(value: unknown): ToolDisplayConfig["diffIndicatorMo
 	return DIFF_INDICATOR_MODES.includes(value as ToolDisplayConfig["diffIndicatorMode"])
 		? (value as ToolDisplayConfig["diffIndicatorMode"])
 		: DEFAULT_TOOL_DISPLAY_CONFIG.diffIndicatorMode;
+}
+
+function toToolPanelStyle(value: unknown): ToolDisplayConfig["toolPanelStyle"] {
+	return TOOL_PANEL_STYLES.includes(value as ToolDisplayConfig["toolPanelStyle"])
+		? (value as ToolDisplayConfig["toolPanelStyle"])
+		: DEFAULT_TOOL_DISPLAY_CONFIG.toolPanelStyle;
 }
 
 export function cloneCustomToolOverrides(
@@ -215,6 +222,7 @@ export function normalizeToolDisplayConfig(raw: unknown): ToolDisplayConfig {
 			source.enableNativeUserMessageBox,
 			DEFAULT_TOOL_DISPLAY_CONFIG.enableNativeUserMessageBox,
 		),
+		toolPanelStyle: toToolPanelStyle(source.toolPanelStyle),
 		readOutputMode: toReadOutputMode(source.readOutputMode),
 		searchOutputMode: toSearchOutputMode(source.searchOutputMode),
 		mcpOutputMode: toMcpOutputMode(source.mcpOutputMode),

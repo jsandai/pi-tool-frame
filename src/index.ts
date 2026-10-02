@@ -16,6 +16,7 @@ import { registerToolDisplayOverrides } from "./tool-overrides.js";
 import { disposeAll, resetDisposed } from "./disposable.js";
 import { registerThinkingLabeling } from "./thinking-label.js";
 import registerNativeUserMessageBox from "./user-message-box-native.js";
+import registerToolPanelOutline from "./tool-panel-outline.js";
 import {
   BUILT_IN_TOOL_OVERRIDE_NAMES,
   type ToolDisplayConfig,
@@ -85,6 +86,7 @@ export default function toolDisplayExtension(pi: ExtensionAPI): void {
 
   registerToolDisplayOverrides(pi, getEffectiveConfig);
   registerNativeUserMessageBox(pi, getConfig);
+  registerToolPanelOutline(pi, getConfig);
   registerThinkingLabeling(pi);
 
   pi.registerCommand("tool-display", {

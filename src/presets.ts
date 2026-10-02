@@ -64,6 +64,7 @@ function configsEqual(a: ToolDisplayConfig, b: ToolDisplayConfig): boolean {
 		toolOverrideOwnershipEqual(a, b) &&
 		customToolOverridesEqual(a, b) &&
 		a.enableNativeUserMessageBox === b.enableNativeUserMessageBox &&
+		a.toolPanelStyle === b.toolPanelStyle &&
 		a.readOutputMode === b.readOutputMode &&
 		a.searchOutputMode === b.searchOutputMode &&
 		a.mcpOutputMode === b.mcpOutputMode &&

@@ -22,6 +22,7 @@
     }
   },
   "enableNativeUserMessageBox": true,
+  "toolPanelStyle": "filled",
   "readOutputMode": "hidden",
   "searchOutputMode": "hidden",
   "mcpOutputMode": "hidden",
