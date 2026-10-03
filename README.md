@@ -148,6 +148,7 @@ A starter template is included at `config/config.example.json`.
 | `toolPanelStyle` | string | `"filled"` | `filled` (native tinted background) or `outline` (state-colored border, no fill) |
 | `toolPanelBorderColor` | string | unset | Theme color token for every outline border, overriding the state colors |
 | `diffPanelBorderColor` | string | unset | Theme color token for the outline border of finished `edit`/`write` panels |
+| `workingIndicatorColor` | string | unset | Theme color token for the working spinner (pi uses `accent`); a token the theme lacks falls back to the default spinner |
 | `readOutputMode` | string | `"hidden"` | `hidden`, `summary`, or `preview` |
 | `searchOutputMode` | string | `"hidden"` | `hidden`, `count`, or `preview` |
 | `mcpOutputMode` | string | `"hidden"` | `hidden`, `summary`, or `preview` |

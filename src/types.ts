@@ -56,6 +56,7 @@ export interface ToolDisplayConfig {
 	toolPanelStyle: ToolPanelStyle;
 	toolPanelBorderColor: string | undefined;
 	diffPanelBorderColor: string | undefined;
+	workingIndicatorColor: string | undefined;
 	readOutputMode: ReadOutputMode;
 	searchOutputMode: SearchOutputMode;
 	mcpOutputMode: McpOutputMode;
@@ -89,6 +90,7 @@ export const DEFAULT_TOOL_DISPLAY_CONFIG: ToolDisplayConfig = {
 	toolPanelStyle: "filled",
 	toolPanelBorderColor: undefined,
 	diffPanelBorderColor: undefined,
+	workingIndicatorColor: undefined,
 	readOutputMode: "hidden",
 	searchOutputMode: "hidden",
 	mcpOutputMode: "hidden",

@@ -236,6 +236,7 @@ export function normalizeToolDisplayConfig(raw: unknown): ToolDisplayConfig {
 		toolPanelStyle: toToolPanelStyle(source.toolPanelStyle),
 		toolPanelBorderColor: toOptionalString(source.toolPanelBorderColor),
 		diffPanelBorderColor: toOptionalString(source.diffPanelBorderColor),
+		workingIndicatorColor: toOptionalString(source.workingIndicatorColor),
 		readOutputMode: toReadOutputMode(source.readOutputMode),
 		searchOutputMode: toSearchOutputMode(source.searchOutputMode),
 		mcpOutputMode: toMcpOutputMode(source.mcpOutputMode),
