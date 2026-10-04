@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-10-03
+
+First release of `pi-tool-frame`, a hard fork of [MasuRii/pi-tool-display](https://github.com/MasuRii/pi-tool-display) 0.5.0. Entries below 0.6.0 are upstream history.
+
+### Added
+- `toolPanelStyle: "outline"` draws a state-colored border around tool panels instead of a tinted fill. ([cf55203](https://github.com/jsandai/pi-tool-frame/commit/cf55203))
+- `toolPanelBorderColor` and `diffPanelBorderColor` set outline borders from theme color tokens; the diff variant applies only to finished `edit`/`write` panels. ([62475e3](https://github.com/jsandai/pi-tool-frame/commit/62475e3))
+- `diffRowBackground: "transparent"` drops diff row fills and strengthens word emphasis from the theme diff colors. ([62475e3](https://github.com/jsandai/pi-tool-frame/commit/62475e3))
+- `workingIndicatorColor` colors pi's working spinner from a theme color token, falling back to the default spinner when the theme lacks it. ([2366db8](https://github.com/jsandai/pi-tool-frame/commit/2366db8))
+
+### Changed
+- Renamed the package to `pi-tool-frame`. The `/tool-display` command, the `extensions/pi-tool-display/config.json` path and the `pi-tool-display.*` API symbols stay as they were.
+
 ## [0.5.0] - 2026-07-03
 
 ### Added

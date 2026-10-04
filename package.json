@@ -1,6 +1,6 @@
 {
-  "name": "pi-tool-display",
-  "version": "0.5.0",
+  "name": "pi-tool-frame",
+  "version": "0.6.0",
   "description": "Compact tool call rendering, diff visualization, and output truncation extension for Pi coding agent. Hides, collapses, and truncates verbose tool output for cleaner TUI display.",
   "type": "module",
   "main": "./index.ts",
@@ -48,16 +48,16 @@
     "diff",
     "output-mode"
   ],
-  "author": "MasuRii",
+  "author": "jsandai",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/MasuRii/pi-tool-display.git"
+    "url": "git+https://github.com/jsandai/pi-tool-frame.git"
   },
   "bugs": {
-    "url": "https://github.com/MasuRii/pi-tool-display/issues"
+    "url": "https://github.com/jsandai/pi-tool-frame/issues"
   },
-  "homepage": "https://github.com/MasuRii/pi-tool-display#readme",
+  "homepage": "https://github.com/jsandai/pi-tool-frame#readme",
   "engines": {
     "node": ">=20"
   },
@@ -82,5 +82,8 @@
     "tsx": "4.22.4",
     "typescript": "6.0.3",
     "@earendil-works/pi-coding-agent": "^0.80.3"
-  }
+  },
+  "contributors": [
+    "MasuRii"
+  ]
 }

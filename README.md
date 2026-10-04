@@ -1,16 +1,12 @@
 <div align="center">
 
-# pi-tool-display
-
-[![npm version](https://img.shields.io/npm/v/pi-tool-display?style=for-the-badge)](https://www.npmjs.com/package/pi-tool-display)
-[![License](https://img.shields.io/github/license/MasuRii/pi-tool-display?style=for-the-badge)](LICENSE)
-[![Platform](https://img.shields.io/badge/Platform-macOS%20%7C%20Linux%20%7C%20Windows-blue?style=for-the-badge)]()
-
-[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/Y8Y01PSSVR)
+# pi-tool-frame
 
 OpenCode-style tool rendering for the [Pi coding agent](https://github.com/mariozechner/pi).
 
-`pi-tool-display` keeps tool calls compact by default, adds richer diff rendering for file edits, and improves a few core chat UI details such as thinking labels and the native user prompt box.
+A hard fork of [MasuRii/pi-tool-display](https://github.com/MasuRii/pi-tool-display) 0.5.0, adding outline tool panels, theme-token border colors, transparent diff rows and a theme-colored working spinner. The `/tool-display` command, the `extensions/pi-tool-display/config.json` path and the `pi-tool-display.*` API symbols are unchanged, so existing configs and renderer consumers keep working.
+
+`pi-tool-frame` keeps tool calls compact by default, adds richer diff rendering for file edits, and improves a few core chat UI details such as thinking labels and the native user prompt box.
 
 <img width="1360" height="752" alt="image" src="https://github.com/user-attachments/assets/777944a2-18b2-4642-b035-2c703a5abb1b" />
 
@@ -35,7 +31,9 @@ OpenCode-style tool rendering for the [Pi coding agent](https://github.com/mario
 - **Optional native user message box** with markdown-aware rendering and safer ANSI/background handling
 - **Per-tool ownership toggles** so this extension can coexist with other renderer extensions
 - **Capability-aware settings** that keep MCP and RTK-specific controls aligned with the current environment
-- **Adapter API for renderer consumers** through the `pi-tool-display/tool-display-api-consumer` subpath export
+- **Adapter API for renderer consumers** through the `pi-tool-frame/tool-display-api-consumer` subpath export
+- **Outline tool panels** with state-colored or theme-token borders instead of tinted fills
+- **Theme-colored working spinner** through any color token the active theme defines
 
 ## Installation
 
@@ -45,22 +43,18 @@ Place this folder in one of Pi's auto-discovery locations:
 
 ```text
 # Global default (when PI_CODING_AGENT_DIR is unset)
-~/.pi/agent/extensions/pi-tool-display
+~/.pi/agent/extensions/pi-tool-frame
 
 # Project-specific
-.pi/extensions/pi-tool-display
-```
-
-### npm package
-
-```bash
-pi install npm:pi-tool-display
+.pi/extensions/pi-tool-frame
 ```
 
 ### Git repository
 
+The repository is private, so the machine needs GitHub credentials first (`gh auth login`).
+
 ```bash
-pi install git:github.com/MasuRii/pi-tool-display
+pi install git:github.com/jsandai/pi-tool-frame@v0.6.0
 ```
 
 ## Usage
@@ -350,7 +344,7 @@ Those controls only appear when the corresponding capability is available in the
 ## Project structure
 
 ```text
-pi-tool-display/
+pi-tool-frame/
 ├── index.ts                         # Extension entrypoint for Pi auto-discovery
 ├── src/
 │   ├── index.ts                     # Bootstrap and extension registration
@@ -365,12 +359,14 @@ pi-tool-display/
 │   ├── render-utils.ts              # Shared rendering helpers
 │   ├── thinking-label.ts            # Thinking label formatting and context sanitization
 │   ├── tool-overrides.ts            # Built-in, MCP, and opt-in custom renderer overrides
+│   ├── tool-panel-outline.ts        # Outline panel style and border color slots
 │   ├── types.ts                     # Shared config and type definitions
 │   ├── user-message-box-markdown.ts # Markdown extraction for user message rendering
 │   ├── user-message-box-native.ts   # Native user message box registration
 │   ├── user-message-box-patch.ts    # Safe native render patching helpers
 │   ├── user-message-box-renderer.ts # User message border renderer
 │   ├── user-message-box-utils.ts    # ANSI/background normalization helpers
+│   ├── working-indicator.ts         # Theme-colored working spinner
 │   ├── write-display-utils.ts       # Write summary helpers
 │   └── zellij-modal.ts              # Modal UI primitives
 ├── config/
