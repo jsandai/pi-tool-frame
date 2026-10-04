@@ -48,6 +48,10 @@ export default function registerWorkingIndicator(
   let applied = false;
 
   const apply = (ctx: ExtensionContext): void => {
+    // Older pi builds and some non-TUI hosts have no working-indicator API.
+    if (typeof ctx.ui.setWorkingIndicator !== "function") {
+      return;
+    }
     const color = getConfig().workingIndicatorColor;
     if (!color) {
       if (applied) {

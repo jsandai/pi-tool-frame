@@ -64,6 +64,15 @@ test("unset option never touches the indicator", async () => {
   assert.deepEqual(calls, []);
 });
 
+test("hosts without setWorkingIndicator are skipped without throwing", async () => {
+  const handlers: Handler[] = [];
+  const pi = { on: (_event: string, handler: Handler) => handlers.push(handler) };
+  registerWorkingIndicator(pi as never, () => ({ ...DEFAULT_TOOL_DISPLAY_CONFIG, workingIndicatorColor: "spinner" }));
+  for (const handler of handlers) {
+    await handler({}, { ui: { theme: tagTheme } });
+  }
+});
+
 test("set option applies on session start and every run, and resets once cleared", async () => {
   let config: ToolDisplayConfig = { ...DEFAULT_TOOL_DISPLAY_CONFIG, workingIndicatorColor: "spinner" };
   const { calls, emit } = createHarness(() => config, tagTheme);
