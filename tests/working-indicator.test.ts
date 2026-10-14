@@ -51,6 +51,11 @@ test("buildWorkingIndicator falls back to pi's default for an unknown token", ()
   assert.equal(buildWorkingIndicator(strictTheme(["accent"]), "spinner"), undefined);
 });
 
+test("buildWorkingIndicator accepts a hex color the theme has no token for", () => {
+  const indicator = buildWorkingIndicator(strictTheme(["accent"]), "#03edf9");
+  assert.equal(indicator?.frames[0], "\x1b[38;2;3;237;249m⠋\x1b[39m");
+});
+
 test("normalizeToolDisplayConfig keeps workingIndicatorColor and drops blanks", () => {
   assert.equal(normalizeToolDisplayConfig({ workingIndicatorColor: "spinner" }).workingIndicatorColor, "spinner");
   assert.equal(normalizeToolDisplayConfig({ workingIndicatorColor: "  " }).workingIndicatorColor, undefined);

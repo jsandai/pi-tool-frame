@@ -219,3 +219,11 @@ test("patched render passes tool name and state to the border slot resolver", ()
 
   assert.deepEqual(seen, [["edit", "success"], ["bash", "success"], ["edit", "error"]]);
 });
+
+test("patched render draws a hex border color without consulting the theme", () => {
+  const prototype = createPrototype();
+  patchToolExecutionPrototype(prototype, () => tagTheme, () => true, () => "#ff8a3d");
+  const edit = createComponent(prototype) as ReturnType<typeof createComponent> & { toolName: string };
+  edit.toolName = "edit";
+  assert.ok(edit.render(20)[1]?.startsWith("\x1b[38;2;255;138;61m"));
+});

@@ -4,6 +4,7 @@ import {
 } from "@earendil-works/pi-coding-agent";
 import { truncateToWidth, visibleWidth } from "@earendil-works/pi-tui";
 import { onReloadShutdown } from "./extension-lifecycle.js";
+import { colorForeground } from "./theme-color.js";
 import type { ToolDisplayConfig } from "./types.js";
 
 export interface ToolPanelOutlineTheme {
@@ -226,11 +227,11 @@ export function patchToolExecutionPrototype(
     const color = STATE_COLORS[state];
     const borderSlot = getBorderSlot?.(this.toolName, state);
     const colorBorder = (text: string): string => {
-      // A configured border slot (e.g. "toolPanelBorder") wins over the
-      // state color; unknown slots fall back to the state color.
+      // A configured border color (a theme token or "#rrggbb") wins over the
+      // state color; tokens unknown to the theme fall back to the state color.
       if (borderSlot) {
         try {
-          const themed = theme.fg(borderSlot, text);
+          const themed = colorForeground(theme, borderSlot, text);
           if (themed !== text) {
             return themed;
           }

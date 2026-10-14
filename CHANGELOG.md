@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `toolPanelBorderColor`, `diffPanelBorderColor` and `workingIndicatorColor` accept a `#rgb`/`#rrggbb` color as well as a theme token, since pi 1.2 rejects themes that carry extra color keys.
+
 ## [0.6.0] - 2026-10-03
 
 First release of `pi-tool-frame`, a hard fork of [MasuRii/pi-tool-display](https://github.com/MasuRii/pi-tool-display) 0.5.0. Entries below 0.6.0 are upstream history.

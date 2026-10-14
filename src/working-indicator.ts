@@ -3,6 +3,7 @@ import type {
   ExtensionContext,
   WorkingIndicatorOptions,
 } from "@earendil-works/pi-coding-agent";
+import { colorForeground } from "./theme-color.js";
 import type { ToolDisplayConfig } from "./types.js";
 
 export interface WorkingIndicatorTheme {
@@ -14,9 +15,9 @@ const SPINNER_FRAMES = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", 
 const SPINNER_INTERVAL_MS = 80;
 
 /**
- * Build spinner frames in the given theme color token, or undefined when the
- * theme does not define it so pi falls back to its accent spinner. Themes may
- * carry extra color keys beyond pi's schema, which is how a theme opts in.
+ * Build spinner frames in the given theme color token or "#rrggbb" value, or
+ * undefined when the theme does not define the token so pi falls back to its
+ * accent spinner.
  */
 export function buildWorkingIndicator(
   theme: WorkingIndicatorTheme,
@@ -24,7 +25,7 @@ export function buildWorkingIndicator(
 ): WorkingIndicatorOptions | undefined {
   try {
     return {
-      frames: SPINNER_FRAMES.map((frame) => theme.fg(color, frame)),
+      frames: SPINNER_FRAMES.map((frame) => colorForeground(theme, color, frame)),
       intervalMs: SPINNER_INTERVAL_MS,
     };
   } catch {
