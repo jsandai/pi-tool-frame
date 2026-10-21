@@ -2,20 +2,30 @@
 
 # pi-tool-frame
 
-OpenCode-style tool rendering for the [Pi coding agent](https://github.com/mariozechner/pi).
+OpenCode-style tool rendering for the [Pi coding agent](https://github.com/earendil-works/pi).
 
-A hard fork of [MasuRii/pi-tool-display](https://github.com/MasuRii/pi-tool-display) 0.5.0, adding outline tool panels, theme-token border colors, transparent diff rows and a theme-colored working spinner. The `/tool-display` command, the `extensions/pi-tool-display/config.json` path and the `pi-tool-display.*` API symbols are unchanged, so existing configs and renderer consumers keep working.
+A hard fork of [MasuRii/pi-tool-display](https://github.com/MasuRii/pi-tool-display) 0.5.0, adding outline tool panels, theme-token or hex border colors, transparent diff rows and a theme-colored working spinner. The `/tool-display` command, the `extensions/pi-tool-display/config.json` path and the `pi-tool-display.*` API symbols are unchanged, so existing configs and renderer consumers keep working.
 
 `pi-tool-frame` keeps tool calls compact by default, adds richer diff rendering for file edits, and improves a few core chat UI details such as thinking labels and the native user prompt box.
 
-<img width="1360" height="752" alt="image" src="https://github.com/user-attachments/assets/777944a2-18b2-4642-b035-2c703a5abb1b" />
-
-<img width="978" height="670" alt="image" src="https://github.com/user-attachments/assets/122b69ce-6c99-4aaa-ba93-236f97a1d8b4" />
-<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/7d5e36d3-cbe1-4d54-8bed-ae3dbdef870c" />
-<img width="1919" height="566" alt="image" src="https://github.com/user-attachments/assets/68a1619b-62da-480f-8de3-2af441ccf6ff" />
-<img width="1919" height="550" alt="image" src="https://github.com/user-attachments/assets/1d3f0b38-a5b5-47fc-b54b-8b55cc2bfaf1" />
+<img src="screenshots/overview.png" width="1360" alt="A pi session with outline tool panels: a cyan-bordered user prompt box, compact one-line find, read and grep panels with green borders, an italic Thinking label, and an orange-bordered split diff for an edit to src/format.ts" />
 
 </div>
+
+The screenshots use `toolPanelStyle: "outline"`, `diffPanelBorderColor: "#ff8a3d"` and `diffRowBackground: "transparent"` on a synthwave dark theme; everything else is the default `opencode` preset, except that the first image raises `diffCollapsedLines` to 14 to fit the frame.
+
+<details>
+<summary>More screenshots</summary>
+
+<img src="screenshots/session-split.png" width="1920" alt="A full-width session: compact find, read and grep panels with their output hidden, a Thinking label, and a split old/new diff for an edit with word-level emphasis" />
+
+<img src="screenshots/edit-split.png" width="1920" alt="A finished edit panel in split layout: old lines on the left, new lines on the right, change bars in the gutter, and a collapsed hint for 20 more diff lines" />
+
+<img src="screenshots/edit-unified.png" width="978" alt="The same edit in a narrow terminal, where auto mode falls back to a unified diff with removed and added lines interleaved" />
+
+<img src="screenshots/write-create.png" width="1920" alt="A write panel for a new file, showing the line count and size in the header, a created status, and the first 24 lines of the file as an all-added diff" />
+
+</details>
 
 ## Features
 
@@ -51,11 +61,15 @@ Place this folder in one of Pi's auto-discovery locations:
 
 ### Git repository
 
-The repository is private, so the machine needs GitHub credentials first (`gh auth login`).
-
 ```bash
+# Latest main
+pi install git:github.com/jsandai/pi-tool-frame
+
+# Pinned release
 pi install git:github.com/jsandai/pi-tool-frame@v0.6.0
 ```
+
+`v0.6.0` predates hex color support for `toolPanelBorderColor`, `diffPanelBorderColor` and `workingIndicatorColor` (see `[Unreleased]` in the changelog); install from `main` to use `#rgb`/`#rrggbb` values.
 
 ## Usage
 
@@ -76,7 +90,9 @@ The modal exposes the day-to-day controls most people change regularly:
 - preview line count
 - bash collapsed line count
 - diff layout mode
+- diff indicators
 - native user message box toggle
+- tool panel style (`filled` or `outline`)
 
 Advanced options remain in `config.json`.
 
@@ -90,15 +106,17 @@ Advanced options remain in `config.json`.
 /tool-display preset verbose          # Apply verbose preset
 ```
 
+Applying a preset, from the modal or with `reset`/`preset`, replaces the whole saved config with that preset's values. Settings that are not part of the preset table (`toolPanelStyle`, the border and spinner colors, `diffRowBackground`, `customToolOverrides`, `registerToolOverrides`) go back to their defaults, so re-add them to `config.json` afterwards.
+
 ### Tool display adapter API
 
-Other extensions can opt into `pi-tool-display` rendering without directly depending on its load order by importing the consumer helper:
+Other extensions can opt into this extension's rendering without directly depending on its load order by importing the consumer helper:
 
 ```ts
-import { decorateToolForDisplay, decorateMcpToolForDisplay } from "pi-tool-display/tool-display-api-consumer";
+import { decorateToolForDisplay, decorateMcpToolForDisplay } from "pi-tool-frame/tool-display-api-consumer";
 ```
 
-`decorateToolForDisplay(tool, adapter)` applies the runtime decoration immediately when `pi-tool-display` is loaded, or queues the decoration until the API becomes available. Use adapter options such as `kind: "read" | "edit" | "mcp" | "generic"` to select the renderer family; `decorateMcpToolForDisplay(tool)` is the shortcut for MCP-style tools.
+The helper talks to the runtime through the unchanged `pi-tool-display.api.v1` global symbol. `decorateToolForDisplay(tool, adapter)` applies the runtime decoration immediately when the extension is loaded, or queues the decoration until the API becomes available. Use adapter options such as `kind: "read" | "edit" | "mcp" | "generic"` to select the renderer family; `decorateMcpToolForDisplay(tool)` is the shortcut for MCP-style tools.
 
 ## Presets
 
@@ -135,29 +153,31 @@ A starter template is included at `config/config.example.json`.
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
-| `debug` | boolean | `false` | Opt-in file logging for extension diagnostics; missing values are treated as `false` |
+| `enabled` | boolean | `true` | Master switch; `false` skips every override, patch and the `/tool-display` command on the next start or `/reload` |
 | `registerToolOverrides` | object | all `true` | Built-in tool ownership flags |
 | `customToolOverrides` | object | `{}` | Explicit opt-in rendering rules for non-built-in extension tools |
 | `enableNativeUserMessageBox` | boolean | `true` | Enable bordered user prompt rendering |
 | `toolPanelStyle` | string | `"filled"` | `filled` (native tinted background) or `outline` (state-colored border, no fill) |
-| `toolPanelBorderColor` | string | unset | Theme color token or `#rrggbb` for every outline border, overriding the state colors |
-| `diffPanelBorderColor` | string | unset | Theme color token or `#rrggbb` for the outline border of finished `edit`/`write` panels |
-| `workingIndicatorColor` | string | unset | Theme color token or `#rrggbb` for the working spinner (pi uses `accent`); a token the theme lacks falls back to the default spinner |
+| `toolPanelBorderColor` | string | unset | Theme color token or `#rgb`/`#rrggbb` for every outline border, overriding the state colors |
+| `diffPanelBorderColor` | string | unset | Theme color token or `#rgb`/`#rrggbb` for the outline border of finished `edit`/`write` panels |
+| `workingIndicatorColor` | string | unset | Theme color token or `#rgb`/`#rrggbb` for the working spinner (pi uses `accent`); a token the theme lacks falls back to the default spinner |
 | `readOutputMode` | string | `"hidden"` | `hidden`, `summary`, or `preview` |
 | `searchOutputMode` | string | `"hidden"` | `hidden`, `count`, or `preview` |
 | `mcpOutputMode` | string | `"hidden"` | `hidden`, `summary`, or `preview` |
-| `previewLines` | number | `8` | Lines shown in collapsed preview mode |
-| `expandedPreviewMaxLines` | number | `4000` | Max preview lines when fully expanded |
+| `previewLines` | number | `8` | Lines shown in collapsed preview mode (1-80) |
+| `expandedPreviewMaxLines` | number | `4000` | Max preview lines when fully expanded, also caps expanded diffs (0-20000) |
 | `bashOutputMode` | string | `"opencode"` | `opencode` (collapse), `summary` (line count), or `preview` (show lines) |
-| `bashCollapsedLines` | number | `10` | Lines shown for collapsed bash output (opencode mode) |
-| `diffViewMode` | string | `"auto"` | `auto`, `split`, or `unified` |
+| `bashCollapsedLines` | number | `10` | Lines shown for collapsed bash output (opencode mode) (0-80) |
+| `diffViewMode` | string | `"auto"` | `auto`, `split`, or `unified` (legacy `stacked` is read as `unified`) |
 | `diffIndicatorMode` | string | `"bars"` | `bars` (vertical indicators), `classic` (+/- markers), or `none` |
 | `diffRowBackground` | string | `"tinted"` | `tinted` (row backgrounds) or `transparent` (no row fill; stronger word emphasis from the theme diff colors) |
-| `diffSplitMinWidth` | number | `120` | Minimum width before auto mode prefers split diffs |
-| `diffCollapsedLines` | number | `24` | Diff lines shown before collapsing |
+| `diffSplitMinWidth` | number | `120` | Minimum width before auto mode prefers split diffs (70-240) |
+| `diffCollapsedLines` | number | `24` | Diff lines shown before collapsing (4-240) |
 | `diffWordWrap` | boolean | `true` | Wrap long diff lines when needed |
 | `showTruncationHints` | boolean | `false` | Show truncation indicators for compacted output |
 | `showRtkCompactionHints` | boolean | `false` | Show RTK compaction hints when RTK metadata exists |
+
+Numbers outside the ranges shown are clamped, and unknown enum values fall back to the default. `debug` is not read from this file; see [Debug logging](#debug-logging).
 
 ### Tool ownership
 
@@ -183,7 +203,7 @@ Set any entry to `false` if another extension should handle that tool instead.
 
 ### Custom tool overrides
 
-Use `customToolOverrides` when another extension registers a noisy top-level tool and you want `pi-tool-display` to render that tool's call/result output. Custom overrides are explicit opt-in only: unlisted or disabled tools keep their original renderers.
+Use `customToolOverrides` when another extension registers a noisy top-level tool and you want this extension to render that tool's call/result output. Custom overrides are explicit opt-in only: unlisted or disabled tools keep their original renderers.
 
 ```json
 {
@@ -206,7 +226,7 @@ Each entry supports:
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
-| `enabled` | boolean | `true` | Whether `pi-tool-display` should decorate this custom tool |
+| `enabled` | boolean | `true` | Whether this extension should decorate this custom tool |
 | `kind` | string | `"generic"` | `generic` for plain compact output, or `mcp` for MCP-style call labels and result handling |
 | `outputMode` | string | `"summary"` | `hidden`, `summary`, or `preview` for this custom tool's result output |
 
@@ -227,6 +247,21 @@ Notes:
 - `generic` call rendering shows the tool name and argument count, then compacts the result according to `outputMode`.
 - `mcp` call rendering understands MCP proxy-style arguments such as `tool`, `server`, `search`, `describe`, and `connect`.
 - Changes for already-registered tools take effect after `/reload`; tools registered later can be decorated as they register.
+
+### Outline panels
+
+The look in the screenshots:
+
+```json
+{
+  "toolPanelStyle": "outline",
+  "diffPanelBorderColor": "#ff8a3d",
+  "workingIndicatorColor": "#03edf9",
+  "diffRowBackground": "transparent"
+}
+```
+
+Without `toolPanelBorderColor`, outline borders follow the tool state: the theme's `accent` while running, `success` when done and `error` on failure. Panels with inline images and tools that draw their own frame keep pi's native look.
 
 ### Example config
 
@@ -274,7 +309,7 @@ Notes:
 
 ### Debug logging
 
-Debug logging is disabled by default. Set `debug` to `true` in the extension root `config.json` only when collecting diagnostics; missing or non-`true` values are treated as `false`. When enabled, diagnostics are appended to `debug/debug.log` under a runtime-created `debug/` directory, and no debug output is written to the terminal.
+Debug logging is disabled by default. Set `debug` to `true` in a `config.json` at the root of the installed extension (next to `package.json`, not the runtime config path above) only when collecting diagnostics; missing or non-`true` values are treated as `false`. When enabled, diagnostics are appended to `debug/debug.log` under a runtime-created `debug/` directory, and no debug output is written to the terminal.
 
 ## Rendering notes
 
@@ -346,47 +381,40 @@ Those controls only appear when the corresponding capability is available in the
 ```text
 pi-tool-frame/
 ├── index.ts                         # Extension entrypoint for Pi auto-discovery
+├── tool-display-api-consumer.js     # Adapter helper for other extensions (+ .d.ts)
 ├── src/
 │   ├── index.ts                     # Bootstrap and extension registration
+│   ├── agent-dir.ts                 # PI_CODING_AGENT_DIR-aware agent directory lookup
+│   ├── ansi-utils.ts                # SGR parsing helpers
+│   ├── bash-display.ts              # Bash call/result rendering and spinner
 │   ├── capabilities.ts              # MCP/RTK capability detection
 │   ├── config-modal.ts              # /tool-display settings UI and command handling
 │   ├── config-store.ts              # Config load/save and normalization
-│   ├── disposable.ts                # Reload-safe cleanup registry for tool overrides, patches, and timers
+│   ├── debug-logger.ts              # Opt-in file debug logging
+│   ├── diff-presentation.ts         # Split/unified layout selection and diff summary stats
 │   ├── diff-renderer.ts             # Edit/write diff rendering engine
+│   ├── disposable.ts                # Reload-safe cleanup registry for tool overrides, patches, and timers
+│   ├── extension-lifecycle.ts       # Reload shutdown hook helper
 │   ├── line-width-safety.ts         # Width clamping helpers for narrow panes
+│   ├── modal-icons.ts               # Icon set for the settings modal
 │   ├── pending-diff-preview.ts      # Partial edit/write preview projection helpers
 │   ├── presets.ts                   # Preset definitions and matching
 │   ├── render-utils.ts              # Shared rendering helpers
+│   ├── settings-inspector-modal.ts  # Split-pane settings inspector
+│   ├── theme-color.ts               # Theme token or hex foreground coloring
 │   ├── thinking-label.ts            # Thinking label formatting and context sanitization
+│   ├── tool-metadata.ts             # Built-in and MCP tool prompt metadata
 │   ├── tool-overrides.ts            # Built-in, MCP, and opt-in custom renderer overrides
 │   ├── tool-panel-outline.ts        # Outline panel style and border color slots
 │   ├── types.ts                     # Shared config and type definitions
-│   ├── user-message-box-markdown.ts # Markdown extraction for user message rendering
-│   ├── user-message-box-native.ts   # Native user message box registration
-│   ├── user-message-box-patch.ts    # Safe native render patching helpers
-│   ├── user-message-box-renderer.ts # User message border renderer
-│   ├── user-message-box-utils.ts    # ANSI/background normalization helpers
+│   ├── user-message-box-*.ts        # Native user message box (registration, patching, markdown, rendering)
 │   ├── working-indicator.ts         # Theme-colored working spinner
 │   ├── write-display-utils.ts       # Write summary helpers
 │   └── zellij-modal.ts              # Modal UI primitives
 ├── config/
 │   └── config.example.json          # Starter config template
-└── tests/
-    ├── ansi-utils.test.ts           # ANSI utility tests including foreground RGB preservation
-    ├── bash-display.test.ts         # Bash display and spinner tests
-    ├── capabilities-edge.test.ts    # Capability detection edge cases
-    ├── config-modal.test.ts         # Config modal tests
-    ├── custom-tool-overrides.test.ts # Opt-in custom tool override tests
-    ├── debug-logger-edge.test.ts    # Debug logger edge cases
-    ├── diff-renderer-ansi.test.ts   # ANSI/background handling tests for diff rendering
-    ├── diff-renderer-edge.test.ts   # Diff renderer edge case tests
-    ├── diff-renderer-width.test.ts  # Width and background coverage tests for diff rendering
-    ├── index-integration.test.ts    # Integration tests for extension lifecycle
-    ├── presets-edge.test.ts         # Preset edge case tests
-    ├── reload-behavior.test.ts      # Reload-safe cleanup and re-registration tests
-    ├── tool-overrides-config.test.ts    # Tool override config tests
-    ├── tool-overrides-registration.test.ts # Tool override registration tests
-    └── tool-ui-utils.test.ts        # Utility tests for user message and diff helpers
+├── screenshots/                     # README images
+└── tests/                           # node:test suites (*.test.ts), run with tsx
 ```
 
 ## Development
@@ -401,6 +429,8 @@ npm run test
 # Full verification
 npm run check
 ```
+
+One reload test reads a `config.json` from the repository root, which is gitignored. In a fresh clone, create it first with `cp config/config.example.json config.json`.
 
 ## Related Pi Extensions
 

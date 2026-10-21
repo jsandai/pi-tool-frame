@@ -8,7 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- `toolPanelBorderColor`, `diffPanelBorderColor` and `workingIndicatorColor` accept a `#rgb`/`#rrggbb` color as well as a theme token, since pi 1.2 rejects themes that carry extra color keys.
+- `toolPanelBorderColor`, `diffPanelBorderColor` and `workingIndicatorColor` accept a `#rgb`/`#rrggbb` color as well as a theme token, since pi 1.2 rejects themes that carry extra color keys. ([8d0211a](https://github.com/jsandai/pi-tool-frame/commit/8d0211a))
+
+### Changed
+- README screenshots now live in `screenshots/` and show the fork's outline panels; the README documents the `enabled` switch, numeric option ranges, the `pi-tool-frame/tool-display-api-consumer` import path, and that applying a preset resets panel style, colors and tool overrides.
 
 ## [0.6.0] - 2026-10-03
 
@@ -22,6 +25,9 @@ First release of `pi-tool-frame`, a hard fork of [MasuRii/pi-tool-display](https
 
 ### Changed
 - Renamed the package to `pi-tool-frame`. The `/tool-display` command, the `extensions/pi-tool-display/config.json` path and the `pi-tool-display.*` API symbols stay as they were.
+
+### Fixed
+- The working indicator is skipped on pi builds and hosts that lack `ctx.ui.setWorkingIndicator`. ([6ea5d3a](https://github.com/jsandai/pi-tool-frame/commit/6ea5d3a))
 
 ## [0.5.0] - 2026-07-03
 
