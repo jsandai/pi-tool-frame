@@ -12,6 +12,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - README screenshots now live in `screenshots/` and show the fork's outline panels; the README documents the `enabled` switch, numeric option ranges, the `pi-tool-frame/tool-display-api-consumer` import path, and that applying a preset resets panel style, colors and tool overrides.
+- Peer dependency range now covers pi 0.77 through 1.x (`>=0.77.0 <2.0.0`, plus 0.74/0.75); it stopped at 0.80. Development and tests run against pi 1.3.0, and `package-lock.json` is back in sync so `npm ci` works.
+
+### Fixed
+- The prompt-metadata test no longer assumes which built-in tools carry guidelines (pi 1.x gave `bash` one); it compares each override with its built-in.
 
 ## [0.6.0] - 2026-10-03
 

@@ -119,13 +119,19 @@ test("registerToolDisplayOverrides copies built-in prompt metadata onto overridd
 		assert.equal(registeredTool.promptSnippet, builtInMetadata.promptSnippet);
 	}
 
-	assert.deepEqual(byName.get("read")?.promptGuidelines, (builtInTools.read as unknown as RegisteredToolLike).promptGuidelines);
-	assert.deepEqual(byName.get("edit")?.promptGuidelines, (builtInTools.edit as unknown as RegisteredToolLike).promptGuidelines);
-	assert.deepEqual(byName.get("write")?.promptGuidelines, (builtInTools.write as unknown as RegisteredToolLike).promptGuidelines);
-	assert.equal(byName.get("grep")?.promptGuidelines, undefined);
-	assert.equal(byName.get("find")?.promptGuidelines, undefined);
-	assert.equal(byName.get("ls")?.promptGuidelines, undefined);
-	assert.equal(byName.get("bash")?.promptGuidelines, undefined);
+	// Which built-ins carry guidelines varies by pi version (bash gained one in 1.x), so
+	// compare each override with its built-in instead of hard-coding the set.
+	for (const [name, builtInTool] of Object.entries(builtInTools)) {
+		assert.deepEqual(
+			byName.get(name)?.promptGuidelines,
+			(builtInTool as unknown as RegisteredToolLike).promptGuidelines,
+			`expected '${name}' guidelines to match the built-in`,
+		);
+	}
+	assert.ok(
+		registeredTools.some((tool) => tool.promptGuidelines?.length),
+		"expected at least one built-in to carry guidelines, or this test proves nothing",
+	);
 });
 
 test("registerToolDisplayOverrides registers built-in display renderers during extension load for pre-bind history rendering", () => {
